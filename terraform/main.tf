@@ -20,6 +20,32 @@ provider "aws" {
   region = "us-east-2"
 }
 
+## AMI Data Source from (Amazon Linux 2023)
+data "aws_ami" "amazon_linux_2023" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
 # -------------------------
 # Web Node Security Group
 # -------------------------
@@ -28,7 +54,7 @@ resource "aws_security_group" "NGINX_sg" {
 
   name        = "NGINX-sg"
   description = "Allow SSH and Port 80  inbound, all outbound"
-  vpc_id      = "vpc-0cda215927b58205a"
+  vpc_id      = data.aws_vpc.default.id
 
 
   # inbound SSH
@@ -70,76 +96,14 @@ resource "aws_security_group" "NGINX_sg" {
 
 
 resource "aws_instance" "NGINX" {
-  ami                    = var.NGINX_ami_id
+  ami                    = data.aws_ami.amazon_linux_2023.id
   instance_type          = var.instance_type
-  subnet_id              = "subnet-05321b19c9d5946ea"
-  vpc_security_group_ids = [aws_security_group.NGINX_sg.id]
+  subnet_id              = var.subnet_id
+  availability_zone      = var.availability_zone
   key_name               = var.key_name
-  availability_zone      = "us-east-2a"
-
+  vpc_security_group_ids = [aws_security_group.python_sg.id]
   tags = {
     Name = "terraform-nginx-node"
-  }
-}
-
-# -------------------------
-# Java Node Security Group
-# -------------------------
-
-resource "aws_security_group" "JAVA_sg" {
-
-  name        = "JAVA-sg"
-  description = "Allow SSH and Port 9090  inbound, all outbound"
-  vpc_id      = "vpc-0cda215927b58205a"
-
-
-  # inbound SSH
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # inbound 9090 (JAVA)
-  ingress {
-    description = "JAVA app port 9090"
-    from_port   = 9090
-    to_port     = 9090
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Allow all outbound traffic
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "JAVA-app-security_group"
-  }
-
-}
-
-#-------------------------
-# java EC2 Instance
-# ------------------------
-
-resource "aws_instance" "JAVA" {
- ami                    = var.JAVA_ami_id
-  instance_type          = var.instance_type
-  subnet_id              = "subnet-05321b19c9d5946ea"
-  vpc_security_group_ids = [aws_security_group.JAVA_sg.id]
-  key_name               = var.key_name
-  availability_zone      ="us-east-2a"
-
-  tags = {
-    Name = "terraform-java-node"
   }
 }
 
@@ -151,8 +115,7 @@ resource "aws_security_group" "PYTHON_sg" {
 
   name        = "PYTHON-sg"
   description = "Allow SSH and Port 8080  inbound, all outbound"
-  vpc_id      = "vpc-0cda215927b58205a"
-
+  vpc_id      = data.aws_vpc.default.id
 
   # inbound SSH
 
@@ -167,8 +130,8 @@ resource "aws_security_group" "PYTHON_sg" {
   # inbound 80 (PYTHON)
   ingress {
     description = "PYTHON app port 8080"
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = 8000
+    to_port     = 8000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -194,10 +157,10 @@ resource "aws_security_group" "PYTHON_sg" {
 resource "aws_instance" "PYTHON" {
   ami                    = var.PYTHON_ami_id
   instance_type          = var.instance_type
-  subnet_id              = "subnet-05321b19c9d5946ea"
   vpc_security_group_ids = [aws_security_group.PYTHON_sg.id]
   key_name               = var.key_name
-  availability_zone      = "us-east-2a"
+  subnet_id             = var.subnet_id
+  availability_zone     = var.availability_zone
   tags = {
     Name = "terraform-python-node"
   }

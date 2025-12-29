@@ -3,14 +3,9 @@ variable "NGINX_ami_id" {
   type        = string
 }
 
-variable "JAVA_ami_id" {
-  description = "AMI ID for the Java server"
-  type        = string
-}
-
 variable "PYTHON_ami_id" {
-  description = "AMI ID for the Python server"
-  type        = string
+description = "AMI ID for the Python server"
+type        = string
 }
 
 variable "instance_type" {
@@ -24,16 +19,21 @@ variable "key_name" {
 }
 
 variable "az_number1" {
-  description = "Availability Zone for web-node"
-  type        = string
+description = "Availability Zone for web-node"
+type        = string
 }
 
 variable "az_number2" {
-  description = "Availability Zone for java-node"
+description = "Availability Zone for python-node"
+type        = string
+}
+
+variable "subnet_id" {
+  description = "EC2 SSH subnet_id"
   type        = string
 }
 
-variable "az_number3" {
-  description = "Availability Zone for python-node"
+variable "availability_zone" {
+  description = "EC2 SSH availability_zone"
   type        = string
 }
