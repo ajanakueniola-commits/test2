@@ -303,4 +303,4 @@ def get_products():
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return Path("index.html").read_text(e
+    return Path("index.html").read_text(encoding="utf-8")
