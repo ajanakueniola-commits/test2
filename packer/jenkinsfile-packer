@@ -1,0 +1,76 @@
+pipeline {
+    agent any 
+
+
+    parameters {
+        choice (
+            name: 'TF_ACTION',
+            choices :['plan','apply', 'destroy'],
+            description: 'Select which Terraform action to run'
+        )
+    }
+    
+    environment {
+        
+        AWS_SECRET_ACCESS_KEY = credentials ('aws-secret-access-key')
+        AWS_ACCESS_KEY_ID = credentials ('aws-access-key-id')
+        AWS_DEFAULT_REGION = 'eu-west-1'
+    }
+    
+    stages {
+        stage ('checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage ('terraform init') {
+            steps {
+                dir ('terraform') {
+                    sh ' terraform init -reconfigure'
+                }
+            }
+        }
+
+        stage ('terraform validate') {
+            steps {
+                dir ('terraform') {
+                    sh ' terraform validate'
+                }
+            }
+        } 
+        
+        stage ('terraform plan') {
+            when  {
+                expression { params.TF_ACTION == 'plan'}
+            }
+            steps {
+                dir ('terraform') {
+                    sh ' terraform plan'
+                }
+            }
+        } 
+
+        stage ('terraform apply') {
+         when  {
+                expression { params.TF_ACTION == 'apply'}
+            }
+            steps {
+                dir ('terraform') {
+                    sh ' terraform apply -auto-approve'
+                }
+            }
+        } 
+
+        stage ('terraform destroy') {
+         when  {
+                expression { params.TF_ACTION == 'destroy'}
+            }
+            steps {
+                dir ('terraform') {
+                    sh ' terraform destroy -auto-approve'
+                }
+            }
+        } 
+    
+    }
+}
