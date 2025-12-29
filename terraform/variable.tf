@@ -18,14 +18,13 @@ variable "key_name" {
   type        = string
 }
 
-variable "az_number1" {
-description = "Availability Zone for web-node"
-type        = string
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
 }
-
-variable "az_number2" {
-description = "Availability Zone for python-node"
-type        = string
+variable "vpc_id" {
+  description = "VPC ID"
+  type        = string
 }
 
 variable "subnet_id" {

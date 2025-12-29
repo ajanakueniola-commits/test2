@@ -46,6 +46,14 @@ data "aws_ami" "amazon_linux_2023" {
   }
 }
 
+#  ----------------------==
+# VPC Data Source
+#  ------------------------
+
+data "aws_vpc" "default" {
+  default = true
+}
+
 # -------------------------
 # Web Node Security Group
 # -------------------------
@@ -179,9 +187,4 @@ output "NGINX_ip" {
 output "PYTHON_ip" {
   description = " Public IP"
   value  = aws_instance.PYTHON.public_ip
-}
-
-output "JAVAe_ip" {
-  description = " Public IP"
-  value  = aws_instance.JAVA.public_ip
 }
