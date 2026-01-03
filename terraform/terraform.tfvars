@@ -1,7 +1,5 @@
-aws_region       = "us-east-1"
-PYTHON_ami_id    = "ami-0abcdef1234567890"
-instance_type   = "t2.micro"
-key_name        = "my-keypair"
-subnet_id       = "subnet-0123456789abcdef0"
-availability_zone = "us-east-1a"
-vpc_id          = "vpc-0123456789abcdef0"
+region                  = "us-east-2"
+azs                     = ["us-east-2a", "us-east-2b"]
+instance_type           = "c7i-flex.large"
+packer_ami_name_pattern = ""
+packer_ami_owner        = ""
