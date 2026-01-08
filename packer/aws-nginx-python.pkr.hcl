@@ -58,7 +58,7 @@ source "amazon-ebs" "jenkins-server" {
   ami_virtualization_type = "hvm"
 }
 # -----------------------------
-# BUILDS
+# BUILDS NGINX AMI'S
 # -----------------------------
 
 build {
@@ -101,6 +101,10 @@ build {
   }
 }
 
+# -----------------------------
+# BUILD PYTHON AMI'S
+# -----------------------------
+
 build {
   name    = "python-git-1-ami-build"
   sources = ["source.amazon-ebs.python-git-1"]
@@ -135,31 +139,61 @@ build {
   }
 }
 
+
+# -----------------------------
+# BUILD JENKINS SERVER AMI
+# -----------------------------
+source "amazon-ebs" "jenkins-server" {
+  region        = "us-east-2"
+  instance_type = "c7i-flex.large"
+  ssh_username  = "ec2-user"
+
+  # Amazon Linux 2 (stable & recommended for Jenkins)
+  source_ami = "ami-06f1fc9ae5ae7f31e"
+    ami_name = "jenkins-server-by-packer-{{timestamp}}"
+
+  ami_virtualization_type = "hvm"
+}
+
+# -----------------------------
+# BUILD
+# -----------------------------
 build {
   name    = "jenkins-server-ami-build"
   sources = ["source.amazon-ebs.jenkins-server"]
 
   provisioner "shell" {
     inline = [
+      "set -eux",
+
+      # System update
       "sudo yum update -y",
-      "sudo yum install java-11-amazon-corretto -y",
-      "sudo yum install git -y",
+
+      # Java (required by Jenkins)
+      "sudo yum install -y java-11-amazon-corretto",
+
+      # Jenkins repo
       "sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo",
       "sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key",
-"sudo yum install jenkins -y",
-"sudo systemctl enable jenkins",
-"sudo systemctl start jenkins",
-"sudo yum install -y yum-utils shadow-utils",
-"sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo",
-"sudo yum install packer -y",
-"sudo yum install -y yum-utils shadow-utils",
-"sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo",
-"sudo yum install terraform -y"
 
+      # Jenkins install
+      "sudo yum install -y jenkins",
+      "sudo systemctl enable jenkins",
+      "sudo systemctl start jenkins"
+
+      # Git
+      "sudo yum install -y git",
+
+      # HashiCorp repo
+      "sudo yum install -y yum-utils shadow-utils",
+      "sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo",
+
+      # Terraform & Packer
+      "sudo yum install -y terraform packer"
     ]
   }
 
   post-processor "manifest" {
-    output = "manifest.json"
+    output = "jenkins-manifest.json"
   }
 }
