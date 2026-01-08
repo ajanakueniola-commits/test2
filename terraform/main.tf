@@ -195,3 +195,60 @@ output "python_public_ips" {
   value       = aws_instance.python.*.public_ip
 }
 
+resource "aws_security_group" "postgres_sg" {
+  name        = "grace-postgres-sg"
+  description = "Allow Postgres from EC2 only"
+  vpc_id      = aws_vpc.grace.id
+
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+resource "aws_db_instance" "postgres" {
+  identifier             = "grace-postgres"
+  engine                 = "postgres"
+  engine_version         = "15.4"
+  instance_class         = var.db_instance_class
+  allocated_storage      = var.db_allocated_storage
+  storage_type           = "gp2"
+
+  db_name                = var.db_name
+  username               = var.db_username
+  password               = var.db_password
+
+  vpc_security_group_ids = [aws_security_group.postgres_sg.id]
+  db_subnet_group_name   = aws_db_subnet_group.postgres.name
+
+  multi_az               = false
+  publicly_accessible    = false
+  skip_final_snapshot    = true
+  deletion_protection    = false
+
+  tags = {
+    Name = "grace-postgres-db"
+  }
+}
+
+resource "aws_db_subnet_group" "postgres" {
+  name       = "grace-postgres-subnet-group"
+  subnet_ids = [
+    aws_subnet.grace_private.id,
+    aws_subnet.grace_private_2.id
+  ]
+
+  tags = {
+    Name = "grace-postgres-subnet-group"
+  }
+}
+
+

@@ -27,3 +27,37 @@ variable "packer_ami_owner" {
   type        = string
   default     = ""
 }
+
+variable "instance_type" {
+  description = "EC2 instance type"
+  default     = "c7i-flex.large"
+}
+
+variable "db_name" {
+  default = "appdb"
+}
+
+variable "db_username" {
+  default = "postgres"
+}
+
+variable "db_password" {
+  description = "PostgreSQL password"
+  type        = string
+  sensitive   = true
+}
+
+variable "db_instance_class" {
+  default = "db.t3.micro"
+}
+
+variable "db_allocated_storage" {
+  default = 20
+}
+
+variable "azs" {
+  default = ["us-east-2a", "us-east-2b"]
+}
+variable "region" {
+  default = "us-east-2"
+}
