@@ -1,12 +1,12 @@
 packer {
-    required_version = ">=1.9.0"
+  required_version = ">=1.9.0"
 
-    required_plugins {
-        amazon = {
-            source  = "github.com/hashicorp/amazon"
-            version = ">= 1.2.0"
-        }
+  required_plugins {
+    amazon = {
+      source  = "github.com/hashicorp/amazon"
+      version = ">= 1.2.0"
     }
+  }
 }
 
 # -----------------------------
@@ -14,39 +14,39 @@ packer {
 # -----------------------------
 
 source "amazon-ebs" "nginx-git-1" {
-    region                  = "us-east-2"
-    instance_type           = "t3.small"
-    ssh_username            = "ec2-user"
-    source_ami              = "ami-025ca978d4c1d9825"
-    ami_name                = "nginx-git-1-by-packer-v1"
-    ami_virtualization_type = "hvm"
+  region                  = "us-east-2"
+  instance_type           = "c7i-flex.large"
+  ssh_username            = "ec2-user"
+  source_ami              = "ami-025ca978d4c1d9825"
+  ami_name                = "nginx-git-1-by-packer-v1"
+  ami_virtualization_type = "hvm"
 }
 
 source "amazon-ebs" "nginx-git-2" {
-    region                  = "us-east-2"
-    instance_type           = "t3.small"
-    ssh_username            = "ec2-user"
-    source_ami              = "ami-025ca978d4c1d9825"
-    ami_name                = "nginx-git-2-by-packer-v2"
-    ami_virtualization_type = "hvm"
+  region                  = "us-east-2"
+  instance_type           = "c7i-flex.large"
+  ssh_username            = "ec2-user"
+  source_ami              = "ami-025ca978d4c1d9825"
+  ami_name                = "nginx-git-2-by-packer-v2"
+  ami_virtualization_type = "hvm"
 }
 
 source "amazon-ebs" "python-git-1" {
-    region                  = "us-east-2"
-    instance_type           = "t3.small"
-    ssh_username            = "ec2-user"
-    source_ami              = "ami-025ca978d4c1d9825"
-    ami_name                = "python-git-1-by-packer-v1"
-    ami_virtualization_type = "hvm"
+  region                  = "us-east-2"
+  instance_type           = "c7i-flex.large"
+  ssh_username            = "ec2-user"
+  source_ami              = "ami-025ca978d4c1d9825"
+  ami_name                = "python-git-1-by-packer-v1"
+  ami_virtualization_type = "hvm"
 }
 
 source "amazon-ebs" "python-git-2" {
-    region                  = "us-east-2"
-    instance_type           = "t3.small"
-    ssh_username            = "ec2-user"
-    source_ami              = "ami-025ca978d4c1d9825"
-    ami_name                = "python-git-2-by-packer-v2"
-    ami_virtualization_type = "hvm"
+  region                  = "us-east-2"
+  instance_type           = "c7i-flex.large"
+  ssh_username            = "ec2-user"
+  source_ami              = "ami-025ca978d4c1d9825"
+  ami_name                = "python-git-2-by-packer-v2"
+  ami_virtualization_type = "hvm"
 }
 
 # -----------------------------
@@ -54,79 +54,75 @@ source "amazon-ebs" "python-git-2" {
 # -----------------------------
 
 build {
-    name    = "nginx-git-1-ami-build"
-    sources = ["source.amazon-ebs.nginx-git-1"]
+  name    = "nginx-git-1-ami-build"
+  sources = ["source.amazon-ebs.nginx-git-1"]
 
-    provisioner "shell" {
-        inline = [
-            "sudo yum update -y",
-            "sudo yum install nginx -y",
-            "sudo systemctl enable nginx",
-            "sudo systemctl start nginx",
-            "echo '<h1>Hello from Techbleat - Built by Packer</h1>' | sudo tee /usr/share/nginx/html/index.html",
-            "sudo yum install git -y"
-        ]
-    }
+  provisioner "shell" {
+    inline = [
+      "sudo yum update -y",
+      "sudo yum install nginx -y",
+      "sudo systemctl enable nginx",
+      "sudo systemctl start nginx",
+      "echo '<h1>Hello from Techbleat - Built by Packer</h1>' | sudo tee /usr/share/nginx/html/index.html",
+      "sudo yum install git -y"
+    ]
+  }
 
-    post-processor "manifest" {
-        output = "manifest.json"
-        append = true
-    }
+  post-processor "manifest" {
+    output = "manifest.json"
+  }
 }
 
 build {
-    name    = "nginx-git-2-ami-build"
-    sources = ["source.amazon-ebs.nginx-git-2"]
+  name    = "nginx-git-2-ami-build"
+  sources = ["source.amazon-ebs.nginx-git-2"]
 
-    provisioner "shell" {
-        inline = [
-            "sudo yum update -y",
-            "sudo yum install nginx -y",
-            "sudo systemctl enable nginx",
-            "sudo systemctl start nginx",
-            "echo '<h1>Hello from Techbleat - Built by Packer</h1>' | sudo tee /usr/share/nginx/html/index.html",
-            "sudo yum install git -y"
-        ]
-    }
+  provisioner "shell" {
+    inline = [
+      "sudo yum update -y",
+      "sudo yum install nginx -y",
+      "sudo systemctl enable nginx",
+      "sudo systemctl start nginx",
+      "echo '<h1>Hello from Techbleat - Built by Packer</h1>' | sudo tee /usr/share/nginx/html/index.html",
+      "sudo yum install git -y"
+    ]
+  }
 
-    post-processor "manifest" {
-        output = "manifest.json"
-        append = true
-    }
+  post-processor "manifest" {
+    output = "manifest.json"
+  }
 }
 
 build {
-    name    = "python-git-1-ami-build"
-    sources = ["source.amazon-ebs.python-git-1"]
+  name    = "python-git-1-ami-build"
+  sources = ["source.amazon-ebs.python-git-1"]
 
-    provisioner "shell" {
-        inline = [
-            "sudo yum update -y",
-            "sudo yum install python3 -y",
-            "sudo yum install git -y"
-        ]
-    }
+  provisioner "shell" {
+    inline = [
+      "sudo yum update -y",
+      "sudo yum install python3 -y",
+      "sudo yum install git -y"
+    ]
+  }
 
-    post-processor "manifest" {
-        output = "manifest.json"
-        append = true
-    }
+  post-processor "manifest" {
+    output = "manifest.json"
+  }
 }
 
 build {
-    name    = "python-git-2-ami-build"
-    sources = ["source.amazon-ebs.python-git-2"]
+  name    = "python-git-2-ami-build"
+  sources = ["source.amazon-ebs.python-git-2"]
 
-    provisioner "shell" {
-        inline = [
-            "sudo yum update -y",
-            "sudo yum install python3 -y",
-            "sudo yum install git -y"
-        ]
-    }
+  provisioner "shell" {
+    inline = [
+      "sudo yum update -y",
+      "sudo yum install python3 -y",
+      "sudo yum install git -y"
+    ]
+  }
 
-    post-processor "manifest" {
-        output = "manifest.json"
-        append = true
-    }
+  post-processor "manifest" {
+    output = "manifest.json"
+  }
 }
