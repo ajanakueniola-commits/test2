@@ -194,3 +194,4 @@ output "python_public_ips" {
   description = "Public IPs of PYTHON instances"
   value       = aws_instance.python.*.public_ip
 }
+
