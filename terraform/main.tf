@@ -1,5 +1,4 @@
 terraform {
-
   backend "s3" {
     bucket  = "funmi-cicd-state-bucket"
     key     = "envs/dev/terraform.tfstate"
@@ -21,27 +20,39 @@ provider "aws" {
   region = "us-east-2"
 }
 
-// Lookup AMI: prefer a Packer-generated AMI when `var.packer_ami_name_pattern` is set,
-// otherwise fall back to the Amazon Linux 2 pattern.
-data "aws_ami" "packer_or_amazon" {
-  most_recent = true
+# --------------------------------------------------
+# AMI LOOKUPS
+# --------------------------------------------------
 
-  owners = var.packer_ami_owner != "" ? [var.packer_ami_owner] : ["amazon"]
+# Jenkins AMI from Packer
+data "aws_ami" "jenkins" {
+  most_recent = true
+  owners      = ["self"]
 
   filter {
-    name = "name"
-    values = [
-      var.packer_ami_name_pattern != "" ? var.packer_ami_name_pattern : "amzn2-ami-hvm-*-x86_64-gp2",
-    ]
+    name   = "name"
+    values = ["jenkins-server-by-packer-*"]
   }
 }
 
-// VPC and subnets
+# Fallback AMI for nginx/python (existing logic)
+data "aws_ami" "packer_or_amazon" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
+
+# --------------------------------------------------
+# NETWORKING
+# --------------------------------------------------
+
 resource "aws_vpc" "grace" {
   cidr_block = "10.0.0.0/16"
-  tags = {
-    Name = "Grace-vpc"
-  }
+  tags = { Name = "Grace-vpc" }
 }
 
 resource "aws_subnet" "grace_public" {
@@ -49,9 +60,7 @@ resource "aws_subnet" "grace_public" {
   availability_zone       = var.azs[0]
   cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
-  tags = {
-    Name = "grace-public-sub"
-  }
+  tags = { Name = "grace-public-sub" }
 }
 
 resource "aws_subnet" "grace_public_2" {
@@ -59,28 +68,21 @@ resource "aws_subnet" "grace_public_2" {
   availability_zone       = var.azs[1]
   cidr_block              = "10.0.2.0/24"
   map_public_ip_on_launch = true
-  tags = {
-    Name = "grace-public-sub-2"
-  }
+  tags = { Name = "grace-public-sub-2" }
 }
 
 resource "aws_subnet" "grace_private" {
-  vpc_id                  = aws_vpc.grace.id
-  availability_zone       = var.azs[0]
-  cidr_block              = "10.0.3.0/24"
-  tags = {
-    Name = "grace-private-sub"
-  }
+  vpc_id            = aws_vpc.grace.id
+  availability_zone = var.azs[0]
+  cidr_block        = "10.0.3.0/24"
+  tags = { Name = "grace-private-sub" }
 }
 
 resource "aws_subnet" "grace_private_2" {
-  vpc_id                  = aws_vpc.grace.id
-  availability_zone       = var.azs[1]
-  cidr_block              = "10.0.4.0/24"
-
-  tags = {
-    Name = "grace-private-sub-2"
-  }
+  vpc_id            = aws_vpc.grace.id
+  availability_zone = var.azs[1]
+  cidr_block        = "10.0.4.0/24"
+  tags = { Name = "grace-private-sub-2" }
 }
 
 resource "aws_internet_gateway" "grace_igw" {
@@ -90,10 +92,12 @@ resource "aws_internet_gateway" "grace_igw" {
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.grace.id
+
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.grace_igw.id
   }
+
   tags = { Name = "grace-public-rt" }
 }
 
@@ -102,9 +106,24 @@ resource "aws_route_table_association" "public_assoc" {
   route_table_id = aws_route_table.public.id
 }
 
+resource "aws_route_table_association" "public_assoc_2" {
+  subnet_id      = aws_subnet.grace_public_2.id
+  route_table_id = aws_route_table.public.id
+}
+
+locals {
+  subnet_ids = [
+    aws_subnet.grace_public.id,
+    aws_subnet.grace_public_2.id
+  ]
+}
+
+# --------------------------------------------------
+# SECURITY GROUPS
+# --------------------------------------------------
+
 resource "aws_security_group" "web_sg" {
-  name        = "nginx-web-sg"
-  description = "Allow HTTP and SSH"
+  name_prefix = "grace-web-"
   vpc_id      = aws_vpc.grace.id
 
   ingress {
@@ -129,75 +148,81 @@ resource "aws_security_group" "web_sg" {
   }
 }
 
-locals {
-  subnet_ids = [aws_subnet.grace_public.id, aws_subnet.grace_public_2.id]
+resource "aws_security_group" "jenkins_sg" {
+  name_prefix = "jenkins-sg-"
+  vpc_id      = aws_vpc.grace.id
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
-resource "aws_route_table_association" "public_assoc_2" {
-  subnet_id      = aws_subnet.grace_public_2.id
-  route_table_id = aws_route_table.public.id
-}
+# --------------------------------------------------
+# EC2 INSTANCES
+# --------------------------------------------------
 
 resource "aws_instance" "nginx" {
-  count                       = 2
-  ami                         = data.aws_ami.packer_or_amazon.id
-  instance_type               = var.instance_type
-  # availability_zone omitted — let AWS infer from subnet to avoid AZ mismatch
-  subnet_id                   = local.subnet_ids[count.index]
-  vpc_security_group_ids      = [aws_security_group.web_sg.id]
-  associate_public_ip_address = true
-
-  user_data = <<-EOF
-    #!/bin/bash
-    yum update -y
-    amazon-linux-extras install -y nginx1
-    systemctl enable nginx
-    systemctl start nginx
-    echo "Hello from nginx instance ${count.index}" > /usr/share/nginx/html/index.html
-  EOF
+  count                  = 2
+  ami                    = data.aws_ami.packer_or_amazon.id
+  instance_type          = var.instance_type
+  subnet_id              = local.subnet_ids[count.index]
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
 
   tags = {
     Name = "nginx-${count.index}"
   }
 }
 
-output "nginx_public_ips" {
-  description = "Public IPs of NGINX instances"
-  value       = aws_instance.nginx.*.public_ip
-}
-
 resource "aws_instance" "python" {
-  count                       = 2
-  ami                         = data.aws_ami.packer_or_amazon.id
-  instance_type               = var.instance_type
-  # availability_zone omitted — let AWS infer from subnet to avoid AZ mismatch
-  subnet_id                   = local.subnet_ids[count.index]
-  vpc_security_group_ids      = [aws_security_group.web_sg.id]
-  associate_public_ip_address = true
-
-  user_data = <<-EOF
-    #!/bin/bash
-    yum update -y
-    amazon-linux-extras install -y python3
-    python3 -m venv .venv
-    source .venv/bin/activate
-    python -m pip install -r requirements.txt
-    uvicorn main:app --host 0.0.0.0 --port 8000 & reload
-  EOF
+  count                  = 2
+  ami                    = data.aws_ami.packer_or_amazon.id
+  instance_type          = var.instance_type
+  subnet_id              = local.subnet_ids[count.index]
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
 
   tags = {
     Name = "python-${count.index}"
   }
 }
 
-output "python_public_ips" {
-  description = "Public IPs of PYTHON instances"
-  value       = aws_instance.python.*.public_ip
+# -------------------------
+# Jenkins Server
+# -------------------------
+resource "aws_instance" "jenkins" {
+  ami                         = data.aws_ami.jenkins.id
+  instance_type               = "c7i-flex.large"
+  subnet_id                   = aws_subnet.grace_public.id
+  vpc_security_group_ids      = [aws_security_group.jenkins_sg.id]
+  associate_public_ip_address = true
+
+  tags = {
+    Name = "grace-jenkins-server"
+  }
 }
 
+# --------------------------------------------------
+# RDS POSTGRES
+# --------------------------------------------------
+
 resource "aws_security_group" "postgres_sg" {
-  name        = "grace-postgres-sg"
-  description = "Allow Postgres from EC2 only"
+  name_prefix = "grace-postgres-"
   vpc_id      = aws_vpc.grace.id
 
   ingress {
@@ -214,30 +239,6 @@ resource "aws_security_group" "postgres_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-resource "aws_db_instance" "postgres" {
-  identifier             = "grace-postgres"
-  engine                 = "postgres"
-  engine_version         = "15.4"
-  instance_class         = var.db_instance_class
-  allocated_storage      = var.db_allocated_storage
-  storage_type           = "gp2"
-
-  db_name                = var.db_name
-  username               = var.db_username
-  password               = var.db_password
-
-  vpc_security_group_ids = [aws_security_group.postgres_sg.id]
-  db_subnet_group_name   = aws_db_subnet_group.postgres.name
-
-  multi_az               = false
-  publicly_accessible    = false
-  skip_final_snapshot    = true
-  deletion_protection    = false
-
-  tags = {
-    Name = "grace-postgres-db"
-  }
-}
 
 resource "aws_db_subnet_group" "postgres" {
   name       = "grace-postgres-subnet-group"
@@ -245,10 +246,38 @@ resource "aws_db_subnet_group" "postgres" {
     aws_subnet.grace_private.id,
     aws_subnet.grace_private_2.id
   ]
-
-  tags = {
-    Name = "grace-postgres-subnet-group"
-  }
 }
 
+resource "aws_db_instance" "postgres" {
+  identifier             = "grace-postgres"
+  engine                 = "postgres"
+  engine_version         = "15.4"
+  instance_class         = var.db_instance_class
+  allocated_storage      = var.db_allocated_storage
+  db_name                = var.db_name
+  username               = var.db_username
+  password               = var.db_password
+  vpc_security_group_ids = [aws_security_group.postgres_sg.id]
+  db_subnet_group_name   = aws_db_subnet_group.postgres.name
+  publicly_accessible    = false
+  skip_final_snapshot    = true
+}
 
+# --------------------------------------------------
+# OUTPUTS
+# --------------------------------------------------
+
+output "nginx_public_ips" {
+  value = aws_instance.nginx[*].public_ip
+}
+
+output "python_public_ips" {
+  value = aws_instance.python[*].public_ip
+}
+
+output "jenkins_public_ip" {
+  value = aws_instance.jenkins.public_ip
+}
+output "postgres_endpoint" {
+  value = aws_db_instance.postgres.endpoint
+}
