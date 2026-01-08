@@ -1,5 +1,5 @@
 packer {
-  required_version = ">=1.9.0"
+  required_version = ">= 1.9.0"
 
   required_plugins {
     amazon = {
@@ -13,52 +13,55 @@ packer {
 # SOURCES
 # -----------------------------
 
+locals {
+  region        = "us-east-2"
+  instance_type = "c7i-flex.large"
+  base_ami      = "ami-025ca978d4c1d9825"
+  ssh_user      = "ec2-user"
+}
+
 source "amazon-ebs" "nginx-git-1" {
-  region                  = "us-east-2"
-  instance_type           = "c7i-flex.large"
-  ssh_username            = "ec2-user"
-  source_ami              = "ami-025ca978d4c1d9825"
-  ami_name                = "nginx-git-1-by-packer-v1"
-  ami_virtualization_type = "hvm"
+  region        = local.region
+  instance_type = local.instance_type
+  ssh_username  = local.ssh_user
+  source_ami    = local.base_ami
+  ami_name      = "nginx-git-1-by-packer-{{timestamp}}"
 }
 
 source "amazon-ebs" "nginx-git-2" {
-  region                  = "us-east-2"
-  instance_type           = "c7i-flex.large"
-  ssh_username            = "ec2-user"
-  source_ami              = "ami-025ca978d4c1d9825"
-  ami_name                = "nginx-git-2-by-packer-v2"
-  ami_virtualization_type = "hvm"
+  region        = local.region
+  instance_type = local.instance_type
+  ssh_username  = local.ssh_user
+  source_ami    = local.base_ami
+  ami_name      = "nginx-git-2-by-packer-{{timestamp}}"
 }
 
 source "amazon-ebs" "python-git-1" {
-  region                  = "us-east-2"
-  instance_type           = "c7i-flex.large"
-  ssh_username            = "ec2-user"
-  source_ami              = "ami-025ca978d4c1d9825"
-  ami_name                = "python-git-1-by-packer-v1"
-  ami_virtualization_type = "hvm"
+  region        = local.region
+  instance_type = local.instance_type
+  ssh_username  = local.ssh_user
+  source_ami    = local.base_ami
+  ami_name      = "python-git-1-by-packer-{{timestamp}}"
 }
 
 source "amazon-ebs" "python-git-2" {
-  region                  = "us-east-2"
-  instance_type           = "c7i-flex.large"
-  ssh_username            = "ec2-user"
-  source_ami              = "ami-025ca978d4c1d9825"
-  ami_name                = "python-git-2-by-packer-v2"
-  ami_virtualization_type = "hvm"
+  region        = local.region
+  instance_type = local.instance_type
+  ssh_username  = local.ssh_user
+  source_ami    = local.base_ami
+  ami_name      = "python-git-2-by-packer-{{timestamp}}"
 }
 
 source "amazon-ebs" "jenkins-server" {
-  region                  = "us-east-2"
-  instance_type           = "c7i-flex.large"
-  ssh_username            = "ec2-user"
-  source_ami              = "ami-025ca978d4c1d9825"
-  ami_name                = "jenkins-server-by-packer"
-  ami_virtualization_type = "hvm"
+  region        = local.region
+  instance_type = local.instance_type
+  ssh_username  = local.ssh_user
+  source_ami    = local.base_ami
+  ami_name      = "jenkins-server-by-packer-{{timestamp}}"
 }
+
 # -----------------------------
-# BUILDS NGINX AMI'S
+# BUILDS – NGINX
 # -----------------------------
 
 build {
@@ -68,16 +71,14 @@ build {
   provisioner "shell" {
     inline = [
       "sudo yum update -y",
-      "sudo yum install nginx -y",
+      "sudo yum install -y nginx git",
       "sudo systemctl enable nginx",
-      "sudo systemctl start nginx",
-      "echo '<h1>Hello from Techbleat - Built by Packer</h1>' | sudo tee /usr/share/nginx/html/index.html",
-      "sudo yum install git -y"
+      "echo '<h1>Hello from Techbleat</h1>' | sudo tee /usr/share/nginx/html/index.html"
     ]
   }
 
   post-processor "manifest" {
-    output = "manifest.json"
+    output = "nginx-git-1-manifest.json"
   }
 }
 
@@ -88,21 +89,18 @@ build {
   provisioner "shell" {
     inline = [
       "sudo yum update -y",
-      "sudo yum install nginx -y",
-      "sudo systemctl enable nginx",
-      "sudo systemctl start nginx",
-      "echo '<h1>Hello from Techbleat - Built by Packer</h1>' | sudo tee /usr/share/nginx/html/index.html",
-      "sudo yum install git -y"
+      "sudo yum install -y nginx git",
+      "sudo systemctl enable nginx"
     ]
   }
 
   post-processor "manifest" {
-    output = "manifest.json"
+    output = "nginx-git-2-manifest.json"
   }
 }
 
 # -----------------------------
-# BUILD PYTHON AMI'S
+# BUILDS – PYTHON
 # -----------------------------
 
 build {
@@ -112,13 +110,12 @@ build {
   provisioner "shell" {
     inline = [
       "sudo yum update -y",
-      "sudo yum install python3 -y",
-      "sudo yum install git -y"
+      "sudo yum install -y python3 git"
     ]
   }
 
   post-processor "manifest" {
-    output = "manifest.json"
+    output = "python-git-1-manifest.json"
   }
 }
 
@@ -129,35 +126,19 @@ build {
   provisioner "shell" {
     inline = [
       "sudo yum update -y",
-      "sudo yum install python3 -y",
-      "sudo yum install git -y"
+      "sudo yum install -y python3 git"
     ]
   }
 
   post-processor "manifest" {
-    output = "manifest.json"
+    output = "python-git-2-manifest.json"
   }
 }
 
-
 # -----------------------------
-# BUILD JENKINS SERVER AMI
+# BUILD – JENKINS SERVER
 # -----------------------------
-source "amazon-ebs" "jenkins-server" {
-  region        = "us-east-2"
-  instance_type = "c7i-flex.large"
-  ssh_username  = "ec2-user"
 
-  # Amazon Linux 2 (stable & recommended for Jenkins)
-  source_ami = "ami-06f1fc9ae5ae7f31e"
-    ami_name = "jenkins-server-by-packer-{{timestamp}}"
-
-  ami_virtualization_type = "hvm"
-}
-
-# -----------------------------
-# BUILD
-# -----------------------------
 build {
   name    = "jenkins-server-ami-build"
   sources = ["source.amazon-ebs.jenkins-server"]
@@ -165,30 +146,17 @@ build {
   provisioner "shell" {
     inline = [
       "set -eux",
-
-      # System update
       "sudo yum update -y",
+      "sudo yum install -y java-11-amazon-corretto git",
 
-      # Java (required by Jenkins)
-      "sudo yum install -y java-11-amazon-corretto",
-
-      # Jenkins repo
       "sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo",
       "sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key",
 
-      # Jenkins install
       "sudo yum install -y jenkins",
       "sudo systemctl enable jenkins",
-      "sudo systemctl start jenkins"
 
-      # Git
-      "sudo yum install -y git",
-
-      # HashiCorp repo
       "sudo yum install -y yum-utils shadow-utils",
       "sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo",
-
-      # Terraform & Packer
       "sudo yum install -y terraform packer"
     ]
   }
