@@ -69,7 +69,8 @@ build {
     }
 
     post-processor "manifest" {
-        output = "manifest-nginx-git-1.json"
+        output = "manifest.json"
+        append = true
     }
 }
 
@@ -89,7 +90,8 @@ build {
     }
 
     post-processor "manifest" {
-        output = "manifest-nginx-git-2.json"
+        output = "manifest.json"
+        append = true
     }
 }
 
@@ -106,7 +108,8 @@ build {
     }
 
     post-processor "manifest" {
-        output = "manifest-python-git-1.json"
+        output = "manifest.json"
+        append = true
     }
 }
 
@@ -123,15 +126,7 @@ build {
     }
 
     post-processor "manifest" {
-        output = "manifest-python-git-2.json"
+        output = "manifest.json"
+        append = true
     }
-}
-
-# -----------------------------
-# ✅ GLOBAL MANIFEST FOR JENKINS
-# -----------------------------
-
-post-processor "manifest" {
-    output      = "manifest.json"
-    strip_path  = true
 }
