@@ -1,50 +1,54 @@
 pipeline {
-    agent any 
+    agent any
 
- environment {
-        
-        AWS_SECRET_ACCESS_KEY = credentials ('aws-secret-access-key')
-        AWS_ACCESS_KEY_ID = credentials ('aws-access-key-id')
+    environment {
         AWS_DEFAULT_REGION = 'us-east-2'
     }
 
-stages {
-        stage ('checkout') {
+    stages {
+
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        stage('packer init') {
-            steps {
-            dir('packer') {
-                sh 'packer init aws-nginx-git-java.pkr.hcl'
-            }
-        }
-    }
 
-        stage ('packer validate .') {
+        stage('Packer Init') {
             steps {
-                dir ('packer') {
-                    sh ' packer validate .'
+                dir('packer') {
+                    sh 'packer init aws-nginx-git-java.pkr.hcl'
                 }
             }
-        } 
+        }
 
-       stage('Packer Build') {
-    steps {
-        dir('packer') {
-            sh 'packer build .'
+        stage('Packer Validate') {
+            steps {
+                dir('packer') {
+                    sh 'packer validate .'
+                }
+            }
+        }
 
-            // extract AMI ID from manifest.json
-            script {
-                AMI_ID = sh(
-                    script: "jq -r '.builds[0].artifact_id | split(\":\")[1]' manifest.json",
-                    returnStdout: true
-                ).trim()
+        stage('Packer Build') {
+            steps {
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                     credentialsId: 'aws-credentials']
+                ]) {
+                    dir('packer') {
+                        sh 'packer build .'
 
-                echo "Created AMI ID: ${AMI_ID}"
+                        script {
+                            def AMI_ID = sh(
+                                script: "jq -r '.builds[0].artifact_id | split(\":\")[1]' manifest.json",
+                                returnStdout: true
+                            ).trim()
+
+                            echo "Created AMI ID: ${AMI_ID}"
+                        }
+                    }
+                }
             }
         }
     }
 }
-
