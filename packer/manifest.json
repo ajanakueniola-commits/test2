@@ -1,0 +1,77 @@
+{
+  "builds": [
+    {
+      "name": "python-git-2",
+      "builder_type": "amazon-ebs",
+      "build_time": 1767840428,
+      "files": null,
+      "artifact_id": "us-east-2:ami-0dbf6dacc17a47595",
+      "packer_run_uuid": "dea0a53c-a3c8-1fb7-e4dc-4bf7f5937ca9",
+      "custom_data": null
+    },
+    {
+      "name": "nginx-git-1",
+      "builder_type": "amazon-ebs",
+      "build_time": 1767840432,
+      "files": null,
+      "artifact_id": "us-east-2:ami-079c057fade6b260c",
+      "packer_run_uuid": "dea0a53c-a3c8-1fb7-e4dc-4bf7f5937ca9",
+      "custom_data": null
+    },
+    {
+      "name": "nginx-git-2",
+      "builder_type": "amazon-ebs",
+      "build_time": 1767840473,
+      "files": null,
+      "artifact_id": "us-east-2:ami-0955042e8488841a9",
+      "packer_run_uuid": "dea0a53c-a3c8-1fb7-e4dc-4bf7f5937ca9",
+      "custom_data": null
+    },
+    {
+      "name": "python-git-1",
+      "builder_type": "amazon-ebs",
+      "build_time": 1767840481,
+      "files": null,
+      "artifact_id": "us-east-2:ami-0edc178c74800eafa",
+      "packer_run_uuid": "dea0a53c-a3c8-1fb7-e4dc-4bf7f5937ca9",
+      "custom_data": null
+    },
+    {
+      "name": "nginx-git-1",
+      "builder_type": "amazon-ebs",
+      "build_time": 1767842010,
+      "files": null,
+      "artifact_id": "us-east-2:ami-00966205c8a57069d",
+      "packer_run_uuid": "e9f85df8-faae-b4f9-791f-b80bd8ee13e2",
+      "custom_data": null
+    },
+    {
+      "name": "python-git-1",
+      "builder_type": "amazon-ebs",
+      "build_time": 1767842013,
+      "files": null,
+      "artifact_id": "us-east-2:ami-0e73ec871318353cf",
+      "packer_run_uuid": "e9f85df8-faae-b4f9-791f-b80bd8ee13e2",
+      "custom_data": null
+    },
+    {
+      "name": "nginx-git-2",
+      "builder_type": "amazon-ebs",
+      "build_time": 1767842013,
+      "files": null,
+      "artifact_id": "us-east-2:ami-05d5193e61f2ad488",
+      "packer_run_uuid": "e9f85df8-faae-b4f9-791f-b80bd8ee13e2",
+      "custom_data": null
+    },
+    {
+      "name": "python-git-2",
+      "builder_type": "amazon-ebs",
+      "build_time": 1767842050,
+      "files": null,
+      "artifact_id": "us-east-2:ami-01dfb4e24ce2eafca",
+      "packer_run_uuid": "e9f85df8-faae-b4f9-791f-b80bd8ee13e2",
+      "custom_data": null
+    }
+  ],
+  "last_run_uuid": "e9f85df8-faae-b4f9-791f-b80bd8ee13e2"
+}

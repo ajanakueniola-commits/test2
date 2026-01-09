@@ -1,215 +1,167 @@
 packer {
-    required_version = ">=1.9.0"
+  required_version = ">= 1.9.0"
 
-    required_plugins {
-        amazon = {
-            source = "github.com/hashicorp/amazon"
-            version = ">= 1.2.0"
-        }
+  required_plugins {
+    amazon = {
+      source  = "github.com/hashicorp/amazon"
+      version = ">= 1.2.0"
     }
+  }
 }
 
+# -----------------------------
+# SOURCES
+# -----------------------------
 
-#-----------------------------
-# source: how we build the AMI For Nginx and GIT 1 
-#-----------------------------
+locals {
+  region        = "us-east-2"
+  instance_type = "c7i-flex.large"
+  base_ami      = "ami-025ca978d4c1d9825"
+  ssh_user      = "ec2-user"
+}
 
 source "amazon-ebs" "nginx-git-1" {
-    region = "us-east-2"
-    instance_type = "t3.small"
-    ssh_username = "ec2-user"
-    source_ami  = "ami-025ca978d4c1d9825"
-    ami_name = "nginx-git-1-by-packer-v1"
-    ami_virtualization_type  = "hvm"
+  region        = local.region
+  instance_type = local.instance_type
+  ssh_username  = local.ssh_user
+  source_ami    = local.base_ami
+  ami_name      = "nginx-git-1-by-packer-{{timestamp}}"
 }
-#-----------------------------
-# source: how we build the AMI For Nginx and GIT 2 
-#-----------------------------
 
 source "amazon-ebs" "nginx-git-2" {
-    region = "us-east-2"
-    instance_type = "t3.small"
-    ssh_username = "ec2-user"
-    source_ami  = "ami-025ca978d4c1d9825"
-    ami_name = "nginx-git-2-by-packer-v2"
-    ami_virtualization_type  = "hvm"
+  region        = local.region
+  instance_type = local.instance_type
+  ssh_username  = local.ssh_user
+  source_ami    = local.base_ami
+  ami_name      = "nginx-git-2-by-packer-{{timestamp}}"
 }
-
-
-#-----------------------------
-# source: how we build the AMI For Java and GIT 
-#-----------------------------
-
-# source "amazon-ebs" "java-git" {
-#     region = "us-east-2"
-#     instance_type = "c7i-flex.large"
-#     ssh_username = "ec2-user"
-#     source_ami  = "ami-025ca978d4c1d9825"
-#     ami_name = "java-git-by-packer-v2"
-#     ami_virtualization_type  = "hvm"
-# }
-
-#-----------------------------
-# source: how we build the AMI For Python and GIT 2
-#-----------------------------
-
-source "amazon-ebs" "python-git-2" {
-    region = "us-east-2"
-    instance_type = "t3.small"
-    ssh_username = "ec2-user"
-    source_ami  = "ami-025ca978d4c1d9825"
-    ami_name = "python-git-1-by-packer-v1"
-    ami_virtualization_type  = "hvm"
-}
-#-----------------------------
-# source: how we build the AMI For Python and GIT 
-#-----------------------------
 
 source "amazon-ebs" "python-git-1" {
-    region = "us-east-2"
-    instance_type = "t3.small"
-    ssh_username = "ec2-user"
-    source_ami  = "ami-025ca978d4c1d9825"
-    ami_name = "python-git-2-by-packer-v2"
-    ami_virtualization_type  = "hvm"
+  region        = local.region
+  instance_type = local.instance_type
+  ssh_username  = local.ssh_user
+  source_ami    = local.base_ami
+  ami_name      = "python-git-1-by-packer-{{timestamp}}"
 }
 
+source "amazon-ebs" "python-git-2" {
+  region        = local.region
+  instance_type = local.instance_type
+  ssh_username  = local.ssh_user
+  source_ami    = local.base_ami
+  ami_name      = "python-git-2-by-packer-{{timestamp}}"
+}
 
-#------------------------------------
-# build: source + provisioning to do 
-#------------------------------------
+source "amazon-ebs" "jenkins-server" {
+  region        = local.region
+  instance_type = local.instance_type
+  ssh_username  = local.ssh_user
+  source_ami    = local.base_ami
+  ami_name      = "jenkins-server-by-packer-{{timestamp}}"
+}
 
-build  {
-    name  = "nginx-git-1-ami-build"
-    sources = [
-        "source.amazon-ebs.nginx-git-1" 
+# -----------------------------
+# BUILDS – NGINX
+# -----------------------------
+
+build {
+  name    = "nginx-git-1-ami-build"
+  sources = ["source.amazon-ebs.nginx-git-1"]
+
+  provisioner "shell" {
+    inline = [
+      "sudo yum update -y",
+      "sudo yum install -y nginx git",
+      "sudo systemctl enable nginx",
+      "echo '<h1>Hello from Techbleat</h1>' | sudo tee /usr/share/nginx/html/index.html"
     ]
+  }
 
-    provisioner "shell" {
-        inline = [
-            "sudo yum update -y",
-            "sudo yum install nginx -y",
-            "sudo systemctl enable nginx",
-            "sudo systemctl start nginx",
-            "echo  '<h1> Hello from Techbleat - Built by Packer </h1>' | sudo tee /usr/share/nginx/html/index.html",
-            "sudo yum install git -y"
-        ]
-    }
-
-     post-processor "manifest" {
-        output = "manifest-nginx-git-1.json"
-    }
-
-    post-processor "shell-local" {
-        inline = ["echo 'AMI build is finished For Nginx-1' "]
-    
+  post-processor "manifest" {
+    output = "nginx-git-1-manifest.json"
   }
 }
 
-#------------------------------------
-# build: source + provisioning to do 
-#------------------------------------
+build {
+  name    = "nginx-git-2-ami-build"
+  sources = ["source.amazon-ebs.nginx-git-2"]
 
-build  {
-    name  = "nginx-git-2-ami-build"
-    sources = [
-        "source.amazon-ebs.nginx-git-2" 
+  provisioner "shell" {
+    inline = [
+      "sudo yum update -y",
+      "sudo yum install -y nginx git",
+      "sudo systemctl enable nginx"
     ]
+  }
 
-    provisioner "shell" {
-        inline = [
-            "sudo yum update -y",
-            "sudo yum install nginx -y",
-            "sudo systemctl enable nginx",
-            "sudo systemctl start nginx",
-            "echo  '<h1> Hello from Techbleat - Built by Packer </h1>' | sudo tee /usr/share/nginx/html/index.html",
-            "sudo yum install git -y"
-        ]
-    }
-
-     post-processor "manifest" {
-        output = "manifest-nginx-git-2.json"
-    }
-
-    post-processor "shell-local" {
-        inline = ["echo 'AMI build is finished For Nginx-2' "]
-
+  post-processor "manifest" {
+    output = "nginx-git-2-manifest.json"
   }
 }
 
-# build  {
-#     name  = "java-python-git-ami-build"
-#     sources = [
-#         "source.amazon-ebs.java-python-git"
-#     ]
+# -----------------------------
+# BUILDS – PYTHON
+# -----------------------------
 
-#     provisioner "shell" {
-#         inline = [
-#             "sudo yum update -y",
-#             "sudo yum install java-17-amazon-corretto -y",
-#             "sudo yum install git -y",
-#         ]
-#     }
+build {
+  name    = "python-git-1-ami-build"
+  sources = ["source.amazon-ebs.python-git-1"]
 
-#      post-processor "manifest" {
-#         output = "manifest.json"
-#     }
-
-#     post-processor "shell-local" {
-#         inline = ["echo 'AMI build is finished For Java-python' "]
-#     }
-
-# }
-
-build  {
-    name  = "python-git-1-ami-build"
-    sources = [
-        "source.amazon-ebs.python-git-1"
+  provisioner "shell" {
+    inline = [
+      "sudo yum update -y",
+      "sudo yum install -y python3 git"
     ]
+  }
 
-    provisioner "shell" {
-        inline = [
-            "sudo yum update -y",
-            "sudo yum install python3 -y",
-            "sudo yum install git -y"
-
-        ]
-    }
-
-    post-processor "manifest" {
-        output = "manifest-python-git-1.json"
-    }
-
-    post-processor "shell-local" {
-      inline = [
-        "echo 'AMI build is finished for python-git-1'"
-      ]
-    }
-
+  post-processor "manifest" {
+    output = "python-git-1-manifest.json"
+  }
 }
-build  {
-    name  = "python-git-2-ami-build"
-    sources = [
-        "source.amazon-ebs.python-git-2"
+
+build {
+  name    = "python-git-2-ami-build"
+  sources = ["source.amazon-ebs.python-git-2"]
+
+  provisioner "shell" {
+    inline = [
+      "sudo yum update -y",
+      "sudo yum install -y python3 git"
     ]
+  }
 
-    provisioner "shell" {
-        inline = [
-            "sudo yum update -y",
-            "sudo yum install python3 -y",
-            "sudo yum install git -y"
+  post-processor "manifest" {
+    output = "python-git-2-manifest.json"
+  }
+}
 
-        ]
-    }
+# -----------------------------
+# BUILD – JENKINS SERVER
+# -----------------------------
 
-    post-processor "manifest" {
-        output = "manifest-python-git-2.json"
-    }
+build {
+  name    = "jenkins-server-ami-build"
+  sources = ["source.amazon-ebs.jenkins-server"]
 
-    post-processor "shell-local" {
-      inline = [
-        "echo 'AMI build is finished for python-git-2'"
-      ]
-    }
+  provisioner "shell" {
+    inline = [
+      "set -eux",
+      "sudo yum update -y",
+      "sudo yum install -y java-11-amazon-corretto git",
 
+      "sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo",
+      "sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key",
+
+      "sudo yum install -y jenkins",
+      "sudo systemctl enable jenkins",
+
+      "sudo yum install -y yum-utils shadow-utils",
+      "sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo",
+      "sudo yum install -y terraform packer"
+    ]
+  }
+
+  post-processor "manifest" {
+    output = "jenkins-manifest.json"
+  }
 }
