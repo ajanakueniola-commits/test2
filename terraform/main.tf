@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket  = "funmi-cicd-state-bucket"
-    key     = "envs/dev/terraform.tfstate"
+    key     = "envs/dev-enny1/terraform.tfstate"
     region  = "us-east-2"
     encrypt = true
   }
